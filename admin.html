@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jasmine's Matka Chai &amp; Bites — Admin Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Mulish:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --ink:#1B1410;
+    --ink-soft:#2A1E17;
+    --ink-deeper:#120C09;
+    --clay:#B15B2E;
+    --clay-deep:#8C4322;
+    --maroon:#6E1E23;
+    --maroon-deep:#511318;
+    --gold:#E8B33D;
+    --gold-soft:#F0C868;
+    --gold-bright:#FFD874;
+    --cream:#F4E9D8;
+    --cream-dim:#CBB89E;
+    --veg:#5BA968;
+    --nonveg:#C1443B;
+    --paper:#EFE3CB;
+    --shadow: 0 18px 40px rgba(0,0,0,.45);
+    --shadow-card: 0 4px 14px rgba(0,0,0,.35), 0 1px 0 rgba(244,233,216,.04) inset;
+    --shadow-glow: 0 0 0 1px rgba(232,179,61,.14), 0 20px 50px -20px rgba(232,179,61,.35);
+    --grad-gold: linear-gradient(135deg, #FFD874 0%, #E8B33D 55%, #C48A20 100%);
+    --grad-clay: linear-gradient(135deg, #C4693A 0%, #8C4322 100%);
+    --grad-maroon: linear-gradient(135deg, #8A2A31 0%, #511318 100%);
+    --grad-card: linear-gradient(180deg, rgba(244,233,216,.055) 0%, rgba(244,233,216,.02) 100%);
+    --hairline: rgba(232,179,61,.22);
+    --ease: cubic-bezier(.22,.61,.36,1);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(900px 500px at 15% -5%, rgba(177,91,46,.28), transparent 60%),
+      radial-gradient(800px 600px at 90% 10%, rgba(110,30,35,.35), transparent 65%),
+      radial-gradient(1200px 800px at 50% 110%, rgba(232,179,61,.10), transparent 60%),
+      linear-gradient(180deg, #221812 0%, var(--ink) 40%, var(--ink-deeper) 100%);
+    background-attachment: fixed;
+    color:var(--cream);
+    font-family:'Mulish', sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  /* subtle paper grain overlay */
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; opacity:.35; mix-blend-mode:overlay; z-index:0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .95  0 0 0 0 .82  0 0 0 0 .55  0 0 0 .12 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+  h1,h2,h3{font-family:'Alfa Slab One', serif; font-weight:400; letter-spacing:.5px;}
+  .shell{
+    position:relative; z-index:1;
+    width:100%; max-width:480px; min-height:100vh;
+    background:
+      linear-gradient(180deg, rgba(232,179,61,.05) 0%, transparent 220px),
+      linear-gradient(180deg, var(--ink-soft) 0%, #251A13 100%);
+    box-shadow: var(--shadow), 0 0 0 1px rgba(232,179,61,.08);
+    display:flex; flex-direction:column;
+    border-left:1px solid rgba(232,179,61,.08);
+    border-right:1px solid rgba(232,179,61,.08);
+  }
+
+  /* ===== Top bar ===== */
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 20px 14px;
+    background:
+      linear-gradient(180deg, rgba(232,179,61,.08), rgba(0,0,0,0) 80%);
+    border-bottom:1px solid rgba(232,179,61,.10);
+    position:relative;
+  }
+  .topbar::after{
+    content:""; position:absolute; left:20px; right:20px; bottom:0; height:1px;
+    background: linear-gradient(90deg, transparent, rgba(232,179,61,.35), transparent);
+  }
+  .brand{display:flex; align-items:center; gap:11px;}
+  .brand .mark{
+    width:42px;height:42px;border-radius:50%;
+    background:
+      radial-gradient(circle at 30% 25%, #D97A44 0%, var(--clay) 45%, var(--clay-deep) 100%);
+    display:flex;align-items:center;justify-content:center; font-size:20px;
+    box-shadow: inset 0 -3px 8px rgba(0,0,0,.45), inset 0 2px 3px rgba(255,220,180,.35),
+                0 6px 14px rgba(140,67,34,.5), 0 0 0 2px rgba(232,179,61,.35);
+  }
+  .brand .word{line-height:1;}
+  .brand .word b{
+    display:block; font-family:'Alfa Slab One'; font-size:15px; letter-spacing:.4px;
+    background: var(--grad-gold); -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow: 0 1px 0 rgba(0,0,0,.25);
+  }
+  .brand .word span{display:block; font-size:9px; color:var(--cream-dim); letter-spacing:2.2px; margin-top:3px;}
+  .brand-tag{
+    font-size:9.5px; letter-spacing:1.8px; text-transform:uppercase; color:var(--gold-soft);
+    background:linear-gradient(180deg, rgba(232,179,61,.20), rgba(232,179,61,.08));
+    border:1px solid rgba(232,179,61,.45); padding:5px 10px; border-radius:999px;
+    box-shadow: 0 4px 12px rgba(232,179,61,.15), inset 0 1px 0 rgba(255,220,150,.2);
+  }
+
+  /* ===== Login screen ===== */
+  .login-wrap{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:20px 28px 60px; position:relative;
+  }
+  .login-wrap::before{
+    content:""; position:absolute; width:340px; height:340px; top:15%; left:50%;
+    transform:translateX(-50%);
+    background: radial-gradient(circle, rgba(232,179,61,.15) 0%, transparent 65%);
+    pointer-events:none; filter:blur(20px);
+  }
+  .login-badge{
+    position:relative;
+    width:82px; height:82px; border-radius:50%; margin-bottom:20px;
+    background:radial-gradient(circle at 30% 25%, #D97A44 0%, var(--clay) 45%, var(--clay-deep) 100%);
+    display:flex; align-items:center; justify-content:center; font-size:34px;
+    border:3px solid var(--gold);
+    box-shadow: inset 0 -6px 16px rgba(0,0,0,.45), inset 0 3px 6px rgba(255,220,180,.35),
+                0 14px 40px rgba(232,179,61,.25), 0 4px 20px rgba(0,0,0,.5);
+    animation: badgeGlow 3.6s var(--ease) infinite;
+  }
+  @keyframes badgeGlow{
+    0%,100%{ box-shadow: inset 0 -6px 16px rgba(0,0,0,.45), inset 0 3px 6px rgba(255,220,180,.35), 0 14px 40px rgba(232,179,61,.25), 0 4px 20px rgba(0,0,0,.5);}
+    50%    { box-shadow: inset 0 -6px 16px rgba(0,0,0,.45), inset 0 3px 6px rgba(255,220,180,.4),  0 18px 55px rgba(232,179,61,.4),  0 4px 20px rgba(0,0,0,.5);}
+  }
+  .login-wrap h1{
+    font-size:24px; margin:0 0 6px; text-align:center;
+    background: var(--grad-gold); -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .login-wrap .sub{color:var(--cream-dim); font-size:12.5px; margin-bottom:28px; text-align:center; letter-spacing:.2px;}
+  .login-form{width:100%; position:relative;}
+  .login-label{font-size:10.5px; letter-spacing:1.8px; text-transform:uppercase; color:var(--gold-soft); margin-bottom:7px; font-weight:700;}
+  .login-field{
+    width:100%; background:rgba(244,233,216,.05); border:1px solid rgba(244,233,216,.18); border-radius:12px;
+    padding:13px 15px; color:var(--cream); font-size:14px; font-family:'Mulish'; margin-bottom:16px;
+    transition:border-color .2s var(--ease), background .2s var(--ease), box-shadow .2s var(--ease);
+  }
+  .login-field:focus{outline:none; border-color:var(--gold); background:rgba(244,233,216,.08); box-shadow: 0 0 0 4px rgba(232,179,61,.12);}
+  .login-field::placeholder{color:var(--cream-dim);}
+  .login-btn{
+    width:100%; background:var(--grad-gold); color:var(--ink); border:none; font-family:'Alfa Slab One'; font-size:14.5px;
+    padding:15px; border-radius:14px; cursor:pointer; letter-spacing:.6px;
+    box-shadow:0 10px 26px rgba(232,179,61,.35), inset 0 1px 0 rgba(255,240,200,.5), inset 0 -2px 0 rgba(140,67,34,.25);
+    transition:transform .15s var(--ease), box-shadow .2s var(--ease);
+  }
+  .login-btn:hover{transform:translateY(-1px); box-shadow:0 14px 32px rgba(232,179,61,.5), inset 0 1px 0 rgba(255,240,200,.5), inset 0 -2px 0 rgba(140,67,34,.25);}
+  .login-btn:active{transform:translateY(0);}
+  .login-error{color:var(--nonveg); font-size:12px; margin:-6px 0 14px; min-height:14px;}
+  .login-back{margin-top:28px; color:var(--cream-dim); font-size:11.5px; text-decoration:underline; cursor:pointer; background:none; border:none; transition:color .2s;}
+  .login-back:hover{color:var(--gold-soft);}
+
+  /* ===== Admin shell ===== */
+  .admin-topline{display:flex; align-items:center; justify-content:space-between; padding:14px 18px 0;}
+  .logout-link{background:none; border:none; color:var(--cream-dim); font-size:11.5px; text-decoration:underline; cursor:pointer; transition:color .2s;}
+  .logout-link:hover{color:var(--gold-soft);}
+  .kview{padding:6px 18px 60px; flex:1;}
+  .kview h2{
+    font-size:22px; margin:10px 0 2px;
+    background: var(--grad-gold); -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .kview .khint{color:var(--cream-dim); font-size:11.5px; margin-bottom:6px; letter-spacing:.2px;}
+
+  .ksubtabs{
+    display:flex; gap:8px; margin:18px -18px 6px; padding:2px 18px 12px;
+    overflow-x:auto; scrollbar-width:none;
+    border-bottom:1px solid rgba(232,179,61,.10);
+  }
+  .ksubtabs::-webkit-scrollbar{display:none;}
+  .ksubtab{
+    flex:0 0 auto; padding:10px 15px; border-radius:12px; font-size:12px; font-weight:800;
+    background:rgba(244,233,216,.05); color:var(--cream-dim);
+    border:1px solid rgba(244,233,216,.10); cursor:pointer; white-space:nowrap;
+    transition:all .2s var(--ease);
+  }
+  .ksubtab:hover:not(.active){background:rgba(244,233,216,.09); color:var(--cream);}
+  .ksubtab.active{
+    background:var(--grad-maroon); color:var(--cream); border-color:rgba(232,179,61,.5);
+    box-shadow: 0 6px 16px rgba(110,30,35,.5), inset 0 1px 0 rgba(255,220,180,.15);
+  }
+
+  /* ===== Dashboard ===== */
+  .demo-flag{
+    background:linear-gradient(180deg, rgba(232,179,61,.12), rgba(232,179,61,.05));
+    border:1px solid rgba(232,179,61,.32); color:var(--gold-soft);
+    font-size:11.5px; padding:11px 14px; border-radius:12px; margin:16px 0; line-height:1.5;
+    box-shadow: var(--shadow-card);
+  }
+  .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;}
+  .stat-card{
+    position:relative; overflow:hidden;
+    background: var(--grad-card);
+    border:1px solid rgba(244,233,216,.10); border-radius:16px; padding:16px 14px;
+    box-shadow: var(--shadow-card);
+    transition:transform .25s var(--ease), border-color .25s var(--ease);
+  }
+  .stat-card::before{
+    content:""; position:absolute; top:0; left:0; right:0; height:2px;
+    background: linear-gradient(90deg, transparent, rgba(232,179,61,.55), transparent);
+  }
+  .stat-card:hover{transform:translateY(-2px); border-color:rgba(232,179,61,.28);}
+  .stat-card .stat-label{font-size:10px; letter-spacing:1.2px; text-transform:uppercase; color:var(--cream-dim); margin-bottom:8px; font-weight:700;}
+  .stat-card .stat-value{
+    font-family:'Alfa Slab One'; font-size:26px;
+    background: var(--grad-gold); -webkit-background-clip:text; background-clip:text; color:transparent;
+    line-height:1;
+  }
+  .stat-card .stat-sub{font-size:10.5px; color:var(--cream-dim); margin-top:5px;}
+  .top-item-card{
+    margin-top:14px; position:relative; overflow:hidden;
+    background:linear-gradient(135deg, rgba(232,179,61,.14) 0%, rgba(110,30,35,.18) 100%);
+    border:1px solid rgba(232,179,61,.38); border-radius:16px;
+    padding:16px; display:flex; align-items:center; gap:14px;
+    box-shadow: 0 10px 30px -12px rgba(232,179,61,.35), inset 0 1px 0 rgba(255,220,180,.08);
+  }
+  .top-item-card::before{
+    content:"★"; position:absolute; top:-14px; right:-14px; font-size:80px;
+    color:rgba(232,179,61,.10); pointer-events:none;
+  }
+  .top-item-card .ti-icon{font-size:32px; filter:drop-shadow(0 4px 8px rgba(0,0,0,.4));}
+  .top-item-card .ti-label{font-size:10px; letter-spacing:1.6px; text-transform:uppercase; color:var(--gold-soft); font-weight:800;}
+  .top-item-card .ti-name{font-size:15px; font-weight:800; color:var(--cream); margin-top:2px;}
+  .top-item-card .ti-count{font-size:11px; color:var(--cream-dim); margin-top:2px;}
+
+  /* ===== Orders / KDS ===== */
+  .kcol-title{
+    font-size:11px; letter-spacing:2.2px; text-transform:uppercase; color:var(--gold-soft);
+    margin:20px 2px 10px; display:flex; align-items:center; gap:10px; font-weight:800;
+  }
+  .kcol-title::after{content:""; flex:1; height:1px; background:linear-gradient(90deg, rgba(232,179,61,.35), transparent);}
+  .korder{
+    background:var(--grad-card); border:1px solid rgba(244,233,216,.10); border-radius:14px;
+    padding:14px; margin-bottom:11px; box-shadow: var(--shadow-card);
+    transition:border-color .2s var(--ease), transform .2s var(--ease);
+  }
+  .korder:hover{border-color:rgba(232,179,61,.25);}
+  .korder .ko-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .korder .ko-id{
+    font-family:'Alfa Slab One'; font-size:14.5px;
+    background: var(--grad-gold); -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .korder .ko-table{
+    font-size:10.5px; background:rgba(232,179,61,.14); color:var(--gold-soft);
+    padding:4px 9px; border-radius:999px; border:1px solid rgba(232,179,61,.32); font-weight:700;
+  }
+  .korder .ko-items{font-size:12.5px; color:var(--cream); line-height:1.55; margin-bottom:8px;}
+  .korder .ko-note{font-size:11.5px; color:var(--gold-soft); font-style:italic; margin-bottom:10px; padding-left:8px; border-left:2px solid rgba(232,179,61,.4);}
+  .ko-actions{display:flex; gap:8px;}
+  .ko-actions button{
+    flex:1; border:none; padding:10px; border-radius:10px; font-size:11.5px; font-weight:800; cursor:pointer;
+    letter-spacing:.3px; transition:transform .15s var(--ease), box-shadow .2s var(--ease);
+  }
+  .ko-actions button:hover{transform:translateY(-1px);}
+  .ko-btn-prep{background:linear-gradient(180deg, rgba(232,179,61,.28), rgba(232,179,61,.12)); color:var(--gold-soft); border:1px solid rgba(232,179,61,.5) !important;}
+  .ko-btn-ready{background:linear-gradient(180deg, rgba(91,169,104,.28), rgba(91,169,104,.12)); color:#9ee0aa; border:1px solid rgba(91,169,104,.5) !important;}
+  .ko-btn-served{background:linear-gradient(180deg, rgba(244,233,216,.14), rgba(244,233,216,.06)); color:var(--cream); border:1px solid rgba(244,233,216,.25) !important;}
+  .kempty{text-align:center; color:var(--cream-dim); font-size:12.5px; padding:40px 10px; font-style:italic;}
+
+  /* ===== Menu management ===== */
+  .diet-dot{width:12px;height:12px;border:1.5px solid; border-radius:3px; flex:0 0 auto; display:flex; align-items:center; justify-content:center;}
+  .diet-dot.veg{border-color:var(--veg);} .diet-dot.veg:after{content:"";width:5.5px;height:5.5px;border-radius:50%;background:var(--veg); box-shadow:0 0 6px rgba(91,169,104,.6);}
+  .diet-dot.nonveg{border-color:var(--nonveg);} .diet-dot.nonveg:after{content:"";width:5.5px;height:5.5px;border-radius:50%;background:var(--nonveg); box-shadow:0 0 6px rgba(193,68,59,.6);}
+  .madmin-cat{
+    font-size:11px; letter-spacing:2.2px; text-transform:uppercase; color:var(--gold-soft);
+    margin:22px 2px 10px; display:flex; align-items:center; gap:10px; font-weight:800;
+  }
+  .madmin-cat::before{content:"◆"; color:var(--gold); font-size:9px;}
+  .madmin-cat:after{content:""; flex:1; height:1px; background:linear-gradient(90deg, rgba(232,179,61,.35), transparent);}
+  .madmin-row{
+    background:var(--grad-card); border:1px solid rgba(244,233,216,.08); border-radius:13px;
+    padding:11px 13px; margin-bottom:9px; display:flex; align-items:center; gap:11px;
+    transition:border-color .2s var(--ease), transform .15s var(--ease);
+  }
+  .madmin-row:hover{border-color:rgba(232,179,61,.22);}
+  .madmin-row.unavailable{opacity:.45;}
+  .madmin-row .mi-icon{font-size:22px; filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));}
+  .madmin-row .mi-main{flex:1; min-width:0;}
+  .madmin-row .mi-name-line{display:flex; align-items:center; gap:7px;}
+  .madmin-row .mi-name{font-size:13px; font-weight:700; color:var(--cream);}
+  .madmin-row .mi-price-edit{
+    width:60px; background:rgba(244,233,216,.06); border:1px solid rgba(244,233,216,.18); border-radius:8px;
+    color:var(--gold-soft); font-size:12.5px; font-weight:800; padding:5px 7px; font-family:'Mulish';
+    text-align:center;
+    transition:border-color .2s;
+  }
+  .madmin-row .mi-price-edit:focus{outline:none; border-color:var(--gold); background:rgba(244,233,216,.10);}
+  .toggle-sw{position:relative; width:38px; height:22px; flex:0 0 auto;}
+  .toggle-sw input{opacity:0; width:0; height:0;}
+  .toggle-sw .sw-track{position:absolute; inset:0; background:rgba(244,233,216,.15); border-radius:999px; cursor:pointer; transition:.25s var(--ease); border:1px solid rgba(244,233,216,.10);}
+  .toggle-sw .sw-track:before{content:""; position:absolute; width:16px; height:16px; left:2px; top:2px; background:var(--cream-dim); border-radius:50%; transition:.25s var(--ease); box-shadow:0 2px 4px rgba(0,0,0,.4);}
+  .toggle-sw input:checked + .sw-track{background:linear-gradient(135deg, #5BA968, #3d8a4d); border-color:rgba(91,169,104,.5); box-shadow: 0 0 10px rgba(91,169,104,.35);}
+  .toggle-sw input:checked + .sw-track:before{transform:translateX(16px); background:#fff;}
+  .mi-del{background:none; border:none; color:var(--nonveg); font-size:15px; cursor:pointer; opacity:.65; flex:0 0 auto; transition:opacity .2s, transform .15s;}
+  .mi-del:hover{opacity:1; transform:scale(1.1);}
+
+  .ai-row{display:flex; gap:8px; margin-bottom:8px;}
+  .ai-field{flex:1; background:rgba(244,233,216,.05); border:1px solid rgba(244,233,216,.16); border-radius:9px; padding:10px 11px; color:var(--cream); font-size:12px; font-family:'Mulish';}
+  .ai-field::placeholder{color:var(--cream-dim);}
+  select.ai-field{color:var(--cream);}
+  .ai-veg-row{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--cream-dim); margin-bottom:10px;}
+  .ai-submit{
+    width:100%; background:var(--grad-gold); color:var(--ink); border:none; font-family:'Alfa Slab One';
+    font-size:13px; padding:12px; border-radius:11px; cursor:pointer; letter-spacing:.5px;
+    box-shadow:0 8px 20px rgba(232,179,61,.28), inset 0 1px 0 rgba(255,240,200,.5);
+    transition:transform .15s var(--ease), box-shadow .2s var(--ease);
+  }
+  .ai-submit:hover{transform:translateY(-1px); box-shadow:0 12px 26px rgba(232,179,61,.4), inset 0 1px 0 rgba(255,240,200,.5);}
+
+  /* ===== QR admin ===== */
+  .qr-toolbar{display:flex; align-items:center; justify-content:space-between; margin:16px 0 12px;}
+  .qr-count-ctrl{display:flex; align-items:center; gap:9px; font-size:12px; color:var(--cream-dim); letter-spacing:.3px;}
+  .qr-count-ctrl select{background:var(--ink); color:var(--cream); border:1px solid rgba(232,179,61,.28); border-radius:9px; padding:6px 10px; font-size:12px; cursor:pointer;}
+  .qr-print-btn{
+    background:var(--grad-gold); color:var(--ink); border:none; font-family:'Alfa Slab One';
+    font-size:11.5px; padding:9px 16px; border-radius:10px; cursor:pointer; letter-spacing:.5px;
+    box-shadow:0 6px 16px rgba(232,179,61,.3), inset 0 1px 0 rgba(255,240,200,.5);
+    transition:transform .15s var(--ease);
+  }
+  .qr-print-btn:hover{transform:translateY(-1px);}
+  .qr-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .qr-card{
+    background:linear-gradient(180deg, #F7ECD5 0%, var(--paper) 100%);
+    color:var(--ink); border-radius:14px; padding:14px 10px; text-align:center;
+    border:1px solid rgba(140,67,34,.2);
+    box-shadow:0 8px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.55);
+    position:relative;
+  }
+  .qr-card::before{
+    content:""; position:absolute; top:6px; left:6px; right:6px; bottom:6px;
+    border:1px dashed rgba(140,67,34,.25); border-radius:10px; pointer-events:none;
+  }
+  .qr-card .qr-mini-wrap{background:#fff; padding:7px; border-radius:9px; display:inline-block; margin-bottom:8px; border:2px dashed var(--clay-deep); position:relative;}
+  .qr-card .qr-table-label{font-size:9.5px; color:#6b5a44; letter-spacing:1.5px; text-transform:uppercase; font-weight:700;}
+  .qr-card .qr-table-num{font-family:'Alfa Slab One'; font-size:18px; color:var(--maroon-deep); margin-top:2px;}
+  .qr-card .qr-url{font-size:8px; color:#8a7a60; margin-top:6px; word-break:break-all; line-height:1.35;}
+  @media print{
+    body *{visibility:hidden;}
+    body::before{display:none;}
+    #printArea, #printArea *{visibility:visible;}
+    #printArea{position:absolute; top:0; left:0; width:100%;}
+    .qr-grid{grid-template-columns:1fr 1fr 1fr;}
+  }
+
+  /* ===== Status breakdown ===== */
+  .status-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:12px;}
+  .status-chip{
+    background:var(--grad-card); border:1px solid rgba(244,233,216,.10); border-radius:13px;
+    padding:11px 6px; text-align:center; position:relative; overflow:hidden;
+    box-shadow: var(--shadow-card);
+    transition:transform .2s var(--ease), border-color .2s var(--ease);
+  }
+  .status-chip:hover{transform:translateY(-2px); border-color:rgba(232,179,61,.28);}
+  .status-chip .sc-count{
+    font-family:'Alfa Slab One'; font-size:19px; line-height:1;
+    background: var(--grad-gold); -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .status-chip .sc-label{font-size:9px; letter-spacing:.8px; text-transform:uppercase; color:var(--cream-dim); margin-top:4px; font-weight:700;}
+
+  /* ===== Danger zone / reset controls ===== */
+  .danger-zone{
+    margin-top:26px;
+    background:linear-gradient(180deg, rgba(193,68,59,.10), rgba(193,68,59,.03));
+    border:1px solid rgba(193,68,59,.32); border-radius:16px; padding:16px;
+    box-shadow: var(--shadow-card);
+  }
+  .dz-title{font-size:12.5px; font-weight:800; color:#e88a82; letter-spacing:.5px; margin-bottom:5px;}
+  .dz-hint{font-size:11px; color:var(--cream-dim); line-height:1.55; margin-bottom:13px;}
+  .dz-row{display:flex; gap:8px; margin-bottom:8px;}
+  .dz-row:last-of-type{margin-bottom:0;}
+  .dz-btn{
+    flex:1; background:rgba(244,233,216,.05); color:var(--cream); border:1px solid rgba(244,233,216,.20);
+    font-size:11.5px; font-weight:700; padding:11px 8px; border-radius:10px; cursor:pointer; font-family:'Mulish';
+    transition:all .18s var(--ease);
+  }
+  .dz-btn:hover{background:rgba(244,233,216,.09); border-color:rgba(244,233,216,.3);}
+  .dz-btn:active{transform:scale(.98);}
+  .dz-btn.danger{background:linear-gradient(180deg, rgba(193,68,59,.22), rgba(193,68,59,.10)); border-color:rgba(193,68,59,.55); color:#e88a82;}
+  .dz-btn.danger:hover{background:linear-gradient(180deg, rgba(193,68,59,.32), rgba(193,68,59,.14));}
+  .reset-msg{margin-top:12px; font-size:11px; color:#9ee0aa; background:rgba(91,169,104,.14); border:1px solid rgba(91,169,104,.4); padding:8px 14px; border-radius:999px; display:inline-block; font-weight:700;}
+
+  /* ===== Settings ===== */
+  .settings-group{margin-top:12px;}
+  .settings-label{font-size:10.5px; letter-spacing:1.8px; text-transform:uppercase; color:var(--gold-soft); margin-bottom:7px; font-weight:700;}
+  .settings-field{
+    width:100%; background:rgba(244,233,216,.05); border:1px solid rgba(244,233,216,.16); border-radius:11px;
+    padding:12px 13px; color:var(--cream); font-size:13px; font-family:'Mulish'; margin-bottom:16px;
+    transition:border-color .2s, background .2s, box-shadow .2s;
+  }
+  .settings-field:focus{outline:none; border-color:var(--gold); background:rgba(244,233,216,.08); box-shadow:0 0 0 4px rgba(232,179,61,.12);}
+  .settings-saved{display:inline-block; font-size:11px; color:#9ee0aa; background:rgba(91,169,104,.14); border:1px solid rgba(91,169,104,.4); padding:7px 14px; border-radius:999px; margin-top:2px; font-weight:700;}
+</style>
+</head>
+<body>
+<div class="shell" id="app"></div>
+
+<script>
+let MENU = [
+  {id:'mo1', cat:'momos', name:'Veg Momos', price:60, veg:true, icon:'🥟', available:true},
+  {id:'mo2', cat:'momos', name:'Chicken Momos', price:80, veg:false, icon:'🥟', available:true},
+  {id:'mo3', cat:'momos', name:'Veg Schezwan Momos', price:90, veg:true, icon:'🥟', available:true},
+  {id:'mo4', cat:'momos', name:'Chicken Schezwan Momos', price:110, veg:false, icon:'🥟', available:true},
+  {id:'mo5', cat:'momos', name:'Veg Chilli Momos', price:90, veg:true, icon:'🥟', available:true},
+  {id:'mo6', cat:'momos', name:'Chicken Chilli Momos', price:110, veg:false, icon:'🥟', available:true},
+  {id:'mo7', cat:'momos', name:'Veg Fried Momos', price:80, veg:true, icon:'🥟', available:true},
+  {id:'mo8', cat:'momos', name:'Chicken Fried Momos', price:100, veg:false, icon:'🥟', available:true},
+  {id:'sp1', cat:'soups', name:'Hot & Sour Soup', price:70, veg:true, icon:'🥣', available:true},
+  {id:'sp2', cat:'soups', name:'Veg Hot & Sour Soup', price:90, veg:true, icon:'🥣', available:true},
+  {id:'sp3', cat:'soups', name:'Egg Hot & Sour Soup', price:100, veg:false, icon:'🥣', available:true},
+  {id:'sp4', cat:'soups', name:'Chicken Hot & Sour Soup', price:120, veg:false, icon:'🥣', available:true},
+  {id:'sp5', cat:'soups', name:'Chicken Clear Soup', price:120, veg:false, icon:'🥣', available:true},
+  {id:'sp6', cat:'soups', name:'Plain Soup', price:60, veg:true, icon:'🥣', available:true},
+  {id:'sp7', cat:'soups', name:'Veg Soup', price:80, veg:true, icon:'🥣', available:true},
+  {id:'sp8', cat:'soups', name:'Egg Soup', price:90, veg:false, icon:'🥣', available:true},
+  {id:'sp9', cat:'soups', name:'Chicken Soup', price:120, veg:false, icon:'🥣', available:true},
+  {id:'sp10', cat:'soups', name:'Veg Soup Chow', price:130, veg:true, icon:'🥣', available:true},
+  {id:'sp11', cat:'soups', name:'Egg Soup Chow', price:150, veg:false, icon:'🥣', available:true},
+  {id:'sp12', cat:'soups', name:'Chicken Soup Chow', price:170, veg:false, icon:'🥣', available:true},
+  {id:'sp13', cat:'soups', name:'Mixed Soup Chow', price:190, veg:false, icon:'🥣', available:true},
+  {id:'bf1', cat:'breakfast', name:'Omelette', price:60, veg:false, icon:'🍳', available:true},
+  {id:'bf2', cat:'breakfast', name:'Poached Egg', price:50, veg:false, icon:'🍳', available:true},
+  {id:'bf3', cat:'breakfast', name:'Bread Toast', price:30, veg:true, icon:'🍞', available:true},
+  {id:'bf4', cat:'breakfast', name:'Scrambled Eggs', price:80, veg:false, icon:'🍳', available:true},
+  {id:'ch1', cat:'chow', name:'Veg Chow', price:120, veg:true, icon:'🍜', available:true},
+  {id:'ch2', cat:'chow', name:'Egg Chow', price:140, veg:false, icon:'🍜', available:true},
+  {id:'ch3', cat:'chow', name:'Chicken Chow', price:160, veg:false, icon:'🍜', available:true},
+  {id:'ch4', cat:'chow', name:'Veg Schezwan Chow', price:140, veg:true, icon:'🍜', available:true},
+  {id:'ch5', cat:'chow', name:'Egg Schezwan Chow', price:160, veg:false, icon:'🍜', available:true},
+  {id:'ch6', cat:'chow', name:'Chicken Schezwan Chow', price:180, veg:false, icon:'🍜', available:true},
+  {id:'ch7', cat:'chow', name:'Veg Singaporean Chow', price:140, veg:true, icon:'🍜', available:true},
+  {id:'ch8', cat:'chow', name:'Egg Singaporean Chow', price:160, veg:false, icon:'🍜', available:true},
+  {id:'ch9', cat:'chow', name:'Chicken Singaporean Chow', price:180, veg:false, icon:'🍜', available:true},
+  {id:'ch10', cat:'chow', name:'Mixed Chow', price:220, veg:false, icon:'🍜', available:true},
+  {id:'ch11', cat:'chow', name:'Schezwan Mixed Chow', price:240, veg:false, icon:'🍜', available:true},
+  {id:'ch12', cat:'chow', name:'Singaporean Mixed Chow', price:240, veg:false, icon:'🍜', available:true},
+  {id:'mc1', cat:'mushroom-chow', name:'Mushroom Veg Chow', price:140, veg:true, icon:'🍄', available:true},
+  {id:'mc2', cat:'mushroom-chow', name:'Mushroom Egg Chow', price:160, veg:false, icon:'🍄', available:true},
+  {id:'mc3', cat:'mushroom-chow', name:'Mushroom Chicken Chow', price:180, veg:false, icon:'🍄', available:true},
+  {id:'mc4', cat:'mushroom-chow', name:'Veg Mushroom Schezwan Chow', price:160, veg:true, icon:'🍄', available:true},
+  {id:'mc5', cat:'mushroom-chow', name:'Egg Mushroom Schezwan Chow', price:180, veg:false, icon:'🍄', available:true},
+  {id:'mc6', cat:'mushroom-chow', name:'Chicken Mushroom Schezwan Chow', price:200, veg:false, icon:'🍄', available:true},
+  {id:'mc7', cat:'mushroom-chow', name:'Mushroom Singaporean Chow', price:160, veg:true, icon:'🍄', available:true},
+  {id:'mc8', cat:'mushroom-chow', name:'Egg Mushroom Singaporean Chow', price:180, veg:false, icon:'🍄', available:true},
+  {id:'mc9', cat:'mushroom-chow', name:'Chicken Mushroom Singaporean Chow', price:200, veg:false, icon:'🍄', available:true},
+  {id:'fr1', cat:'fried-rice', name:'Veg Fried Rice', price:120, veg:true, icon:'🍚', available:true},
+  {id:'fr2', cat:'fried-rice', name:'Egg Fried Rice', price:140, veg:false, icon:'🍚', available:true},
+  {id:'fr3', cat:'fried-rice', name:'Chicken Fried Rice', price:160, veg:false, icon:'🍚', available:true},
+  {id:'fr4', cat:'fried-rice', name:'Veg Schezwan Fried Rice', price:140, veg:true, icon:'🍚', available:true},
+  {id:'fr5', cat:'fried-rice', name:'Egg Schezwan Fried Rice', price:160, veg:false, icon:'🍚', available:true},
+  {id:'fr6', cat:'fried-rice', name:'Chicken Schezwan Fried Rice', price:180, veg:false, icon:'🍚', available:true},
+  {id:'fr7', cat:'fried-rice', name:'Veg Singaporean Fried Rice', price:140, veg:true, icon:'🍚', available:true},
+  {id:'fr8', cat:'fried-rice', name:'Egg Singaporean Fried Rice', price:160, veg:false, icon:'🍚', available:true},
+  {id:'fr9', cat:'fried-rice', name:'Chicken Singaporean Fried Rice', price:180, veg:false, icon:'🍚', available:true},
+  {id:'fr10', cat:'fried-rice', name:'Mixed Fried Rice', price:220, veg:false, icon:'🍚', available:true},
+  {id:'fr11', cat:'fried-rice', name:'Schezwan Mixed Fried Rice', price:240, veg:false, icon:'🍚', available:true},
+  {id:'fr12', cat:'fried-rice', name:'Singaporean Mixed Fried Rice', price:240, veg:false, icon:'🍚', available:true},
+  {id:'mf1', cat:'mushroom-fried-rice', name:'Mushroom Veg Fried Rice', price:140, veg:true, icon:'🍄', available:true},
+  {id:'mf2', cat:'mushroom-fried-rice', name:'Mushroom Egg Fried Rice', price:160, veg:false, icon:'🍄', available:true},
+  {id:'mf3', cat:'mushroom-fried-rice', name:'Mushroom Chicken Fried Rice', price:180, veg:false, icon:'🍄', available:true},
+  {id:'mf4', cat:'mushroom-fried-rice', name:'Veg Mushroom Schezwan Fried Rice', price:160, veg:true, icon:'🍄', available:true},
+  {id:'mf5', cat:'mushroom-fried-rice', name:'Egg Mushroom Schezwan Fried Rice', price:180, veg:false, icon:'🍄', available:true},
+  {id:'mf6', cat:'mushroom-fried-rice', name:'Chicken Mushroom Schezwan Fried Rice', price:200, veg:false, icon:'🍄', available:true},
+  {id:'mf7', cat:'mushroom-fried-rice', name:'Veg Mushroom Singaporean Fried Rice', price:160, veg:true, icon:'🍄', available:true},
+  {id:'mf8', cat:'mushroom-fried-rice', name:'Egg Mushroom Singaporean Fried Rice', price:180, veg:false, icon:'🍄', available:true},
+  {id:'mf9', cat:'mushroom-fried-rice', name:'Chicken Mushroom Singaporean Fried Rice', price:200, veg:false, icon:'🍄', available:true},
+  {id:'pa1', cat:'pasta', name:'Plain White Sauce Pasta', price:140, veg:true, icon:'🍝', available:true},
+  {id:'pa2', cat:'pasta', name:'Chicken White Sauce Pasta', price:160, veg:false, icon:'🍝', available:true},
+  {id:'pa3', cat:'pasta', name:'Plain Cheese Pasta', price:150, veg:true, icon:'🍝', available:true},
+  {id:'pa4', cat:'pasta', name:'Chicken Cheese Pasta', price:170, veg:false, icon:'🍝', available:true},
+  {id:'mg1', cat:'maggi', name:'Veg Masala Maggi', price:90, veg:true, icon:'🍜', available:true},
+  {id:'mg2', cat:'maggi', name:'Chicken Masala Maggi', price:120, veg:false, icon:'🍜', available:true},
+  {id:'mg3', cat:'maggi', name:'Veg Cheese Maggi', price:120, veg:true, icon:'🍜', available:true},
+  {id:'mg4', cat:'maggi', name:'Chicken Cheese Maggi', price:150, veg:false, icon:'🍜', available:true},
+  {id:'mg5', cat:'maggi', name:'Veg Schezwan Maggi', price:120, veg:true, icon:'🍜', available:true},
+  {id:'mg6', cat:'maggi', name:'Chicken Schezwan Maggi', price:150, veg:false, icon:'🍜', available:true},
+  {id:'mg7', cat:'maggi', name:'Maggi with Sunny Side Up', price:120, veg:false, icon:'🍜', available:true},
+  {id:'cs1', cat:'chicken', name:'Crispy Fried Chicken', price:190, veg:false, icon:'🍗', available:true},
+  {id:'cs2', cat:'chicken', name:'Peri Peri Chicken Bites', price:190, veg:false, icon:'🍗', available:true},
+  {id:'cs3', cat:'chicken', name:'Chilli Chicken', price:170, veg:false, icon:'🍗', available:true},
+  {id:'cs4', cat:'chicken', name:'Chicken Manchurian', price:190, veg:false, icon:'🍗', available:true},
+  {id:'cs5', cat:'chicken', name:'Schezwan Chicken', price:160, veg:false, icon:'🍗', available:true},
+  {id:'cs6', cat:'chicken', name:'Chicken 65', price:190, veg:false, icon:'🍗', available:true},
+  {id:'cs7', cat:'chicken', name:'Korean Chicken', price:220, veg:false, icon:'🍗', available:true},
+  {id:'cs8', cat:'chicken', name:'Chicken Dry Fry', price:160, veg:false, icon:'🍗', available:true},
+  {id:'wr1', cat:'wraps', name:'Veg Wrap', price:150, veg:true, icon:'🌯', available:true},
+  {id:'wr2', cat:'wraps', name:'Veg Cheese Wrap', price:160, veg:true, icon:'🌯', available:true},
+  {id:'wr3', cat:'wraps', name:'Chicken Wrap', price:180, veg:false, icon:'🌯', available:true},
+  {id:'wr4', cat:'wraps', name:'Chicken Cheese Wrap', price:200, veg:false, icon:'🌯', available:true},
+  {id:'sd1', cat:'sides', name:'French Fries', price:100, veg:true, icon:'🍟', available:true},
+  {id:'sd2', cat:'sides', name:'Peri Peri Fries', price:120, veg:true, icon:'🍟', available:true},
+  {id:'sd3', cat:'sides', name:'Cheese Fries', price:150, veg:true, icon:'🍟', available:true},
+  {id:'sd4', cat:'sides', name:'Chilli Potato', price:170, veg:true, icon:'🌶️', available:true},
+  {id:'sd5', cat:'sides', name:'Chicken Popcorn', price:150, veg:false, icon:'🍿', available:true},
+  {id:'sd6', cat:'sides', name:'Peri Peri Chicken Popcorn', price:160, veg:false, icon:'🍿', available:true},
+  {id:'mt1', cat:'milk-tea', name:'Special Tea', price:30, veg:true, icon:'🫖', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Special+Tea&font=montserrat', available:true},
+  {id:'mt2', cat:'milk-tea', name:'Masala Tea', price:45, veg:true, icon:'🫖', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Masala+Tea&font=montserrat', available:true},
+  {id:'mt3', cat:'milk-tea', name:'Ginger Tea', price:35, veg:true, icon:'🫖', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Ginger+Tea&font=montserrat', available:true},
+  {id:'mt4', cat:'milk-tea', name:'Cardamom Tea', price:40, veg:true, icon:'🫖', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Cardamom+Tea&font=montserrat', available:true},
+  {id:'mt5', cat:'milk-tea', name:'Saffron Tea', price:65, veg:true, icon:'🫖', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Saffron+Tea&font=montserrat', available:true},
+  {id:'mt6', cat:'milk-tea', name:"Jasmine's Special Matka Tea", price:80, veg:true, icon:'🍵', available:true},
+  {id:'mt7', cat:'milk-tea', name:'Butter Tea', price:50, veg:true, icon:'🫖', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Butter+Tea&font=montserrat', available:true},
+  {id:'mt8', cat:'milk-tea', name:'Lakadong Tea', price:50, veg:true, icon:'🫖', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Lakadong+Tea&font=montserrat', available:true},
+  {id:'mt9', cat:'coffee', name:'Coffee', price:100, veg:true, icon:'☕', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Coffee&font=montserrat', available:true},
+  {id:'mt10', cat:'coffee', name:'Black Coffee', price:60, veg:true, icon:'☕', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Black+Coffee&font=montserrat', available:true},
+  {id:'mt11', cat:'coffee', name:'Cold Coffee', price:150, veg:true, icon:'🥤', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Cold+Coffee&font=montserrat', available:true},
+  {id:'rt1', cat:'red-tea', name:'Plain Tea', price:15, veg:true, icon:'🍵', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Plain+Tea&font=montserrat', available:true},
+  {id:'rt2', cat:'red-tea', name:'Honey Tea', price:25, veg:true, icon:'🍵', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Honey+Tea&font=montserrat', available:true},
+  {id:'rt3', cat:'red-tea', name:'Ginger Tea', price:25, veg:true, icon:'🍵', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Ginger+Tea&font=montserrat', available:true},
+  {id:'rt4', cat:'red-tea', name:'Tulsi Tea', price:30, veg:true, icon:'🍵', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Tulsi+Tea&font=montserrat', available:true},
+  {id:'rt5', cat:'red-tea', name:'Lakadong Tea', price:40, veg:true, icon:'🍵', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Lakadong+Tea&font=montserrat', available:true},
+  {id:'rt6', cat:'red-tea', name:'Hibiscus Tea', price:75, veg:true, icon:'🍵', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Hibiscus+Tea&font=montserrat', available:true},
+  {id:'rt7', cat:'red-tea', name:'Lemon Tea', price:20, veg:true, icon:'🍵', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Lemon+Tea&font=montserrat', available:true},
+  {id:'rt8', cat:'red-tea', name:'Green Tea', price:50, veg:true, icon:'🍵', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Green+Tea&font=montserrat', available:true},
+  {id:'rt9', cat:'red-tea', name:'Kahwa', price:120, veg:true, icon:'🍵', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Kahwa&font=montserrat', available:true},
+  {id:'it1', cat:'iced-tea', name:'Peach Iced Tea', price:130, veg:true, icon:'🧊', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Peach+Iced+Tea&font=montserrat', available:true},
+  {id:'it2', cat:'iced-tea', name:'Lemon Iced Tea', price:130, veg:true, icon:'🧊', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Lemon+Iced+Tea&font=montserrat', available:true},
+  {id:'it3', cat:'iced-tea', name:'Chocolate Iced Tea', price:150, veg:true, icon:'🧊', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Chocolate+Iced+Tea&font=montserrat', available:true},
+  {id:'it4', cat:'iced-tea', name:'Green Iced Tea', price:150, veg:true, icon:'🧊', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Green+Iced+Tea&font=montserrat', available:true},
+  {id:'sh1', cat:'shakes', name:'Blueberry Shake', price:150, veg:true, icon:'🥤', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Blueberry+Shake&font=montserrat', available:true},
+  {id:'sh2', cat:'shakes', name:'Strawberry Shake', price:150, veg:true, icon:'🥤', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Strawberry+Shake&font=montserrat', available:true},
+  {id:'sh3', cat:'shakes', name:'Chocolate Shake', price:170, veg:true, icon:'🥤', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Chocolate+Shake&font=montserrat', available:true},
+  {id:'sh4', cat:'shakes', name:'Butterscotch Shake', price:140, veg:true, icon:'🥤', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Butterscotch+Shake&font=montserrat', available:true},
+  {id:'sh5', cat:'shakes', name:'Oreo Shake', price:180, veg:true, icon:'🥤', image:'https://placehold.co/300x300/B15B2E/F4E9D8?text=Oreo+Shake&font=montserrat', available:true},
+];
+const CATS = [
+  {id:'momos', label:'Momos'},
+  {id:'soups', label:'Soups'},
+  {id:'breakfast', label:'Breakfast'},
+  {id:'chow', label:'Chow'},
+  {id:'mushroom-chow', label:'Mushroom Chow'},
+  {id:'fried-rice', label:'Fried Rice'},
+  {id:'mushroom-fried-rice', label:'Mushroom Fried Rice'},
+  {id:'pasta', label:'Pasta'},
+  {id:'maggi', label:'Maggi'},
+  {id:'chicken', label:'Chicken Specialities'},
+  {id:'wraps', label:'Wraps'},
+  {id:'sides', label:'Sides'},
+  {id:'milk-tea', label:'Milk Tea'},
+  {id:'coffee', label:'Coffee'},
+  {id:'red-tea', label:'Red Tea'},
+  {id:'iced-tea', label:'Iced Tea'},
+  {id:'shakes', label:'Shakes'},
+];
+
+// Orders fill in live from Firebase once connected below (see FIREBASE_CONFIG).
+let orders = [];
+
+let state = {
+  authed: false,
+  username: '',
+  password: '',
+  loginError: '',
+  credentials: {user:'admin', pass:'matka2026'},
+  tab: 'dashboard',
+  qrTableCount: 8,
+  settings: {
+    cafeName: "Jasmine's",
+    shortName: "Matka Chai & Bites",
+    tagline: "Eat · Sip · Chill · Repeat",
+    menuBaseUrl: "",
+  },
+  settingsSaved: false,
+  resetMsg: '',
+};
+
+// ===== Firebase (receives orders live from the customer menu) =====
+// Paste the config object from your Firebase project (Project Settings → General → Your apps → Web app).
+// This EXACT SAME object must also be pasted into jasmines-qr-menu.html so both pages share one database.
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBfi7JuEg3UME09BCcm1cHI672hFFA71ZI",
+  authDomain: "matka-3a6c6.firebaseapp.com",
+  databaseURL: "https://matka-3a6c6-default-rtdb.firebaseio.com",
+  projectId: "matka-3a6c6",
+  storageBucket: "matka-3a6c6.firebasestorage.app",
+  messagingSenderId: "480051265498",
+  appId: "1:480051265498:web:a4989acb0ce7a8de958ae3",
+  measurementId: "G-98F458BVQB"
+};
+let db = null;
+function firebaseReady(){ return !!db; }
+try{
+  if(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY"){
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.database();
+    db.ref('orders').on('value', snapshot => {
+      const val = snapshot.val() || {};
+      orders = Object.entries(val).map(([key, o]) => ({
+        _key: key,
+        id: o.id, table: o.table, items: o.items || [], total: o.total || 0,
+        notes: o.notes || '', status: o.status || 'new', time: new Date(o.time || Date.now()),
+      })).sort((a,b) => b.time - a.time);
+      render();
+    });
+  }
+}catch(e){ console.warn('Firebase not connected yet:', e); }
+
+// ===== Factory defaults, captured once at load, used by the Reset & Data Controls panel =====
+const FACTORY_MENU = JSON.parse(JSON.stringify(MENU));
+const FACTORY_CREDENTIALS = {...state.credentials};
+const FACTORY_SETTINGS = {...state.settings};
+const FACTORY_QR_COUNT = state.qrTableCount;
+
+function money(n){ return '₹' + n; }
+function timeAgo(d){
+  const mins = Math.max(0, Math.round((Date.now()-d.getTime())/60000));
+  return mins<1 ? 'just now' : mins+'m ago';
+}
+
+function renderLogin(){
+  return `
+    <div class="topbar">
+      <div class="brand">
+        <div class="mark">🫖</div>
+        <div class="word"><b>${state.settings.cafeName.toUpperCase()}</b><span>${state.settings.shortName.toUpperCase()}</span></div>
+      </div>
+      <div class="brand-tag">Admin</div>
+    </div>
+    <div class="login-wrap">
+      <div class="login-badge">🔒</div>
+      <h1>Admin Panel</h1>
+      <div class="sub">Sign in to manage orders, menu &amp; tables</div>
+      <div class="login-form">
+        <div class="login-label">Username</div>
+        <input class="login-field" id="loginUser" placeholder="admin" value="${state.username}" oninput="state.username=this.value" onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
+        <div class="login-label">Password</div>
+        <input class="login-field" id="loginPass" type="password" placeholder="••••••••" value="${state.password}" oninput="state.password=this.value" onkeydown="if(event.key==='Enter')attemptLogin()">
+        <div class="login-error">${state.loginError}</div>
+        <button class="login-btn" onclick="attemptLogin()">Log In</button>
+      </div>
+      <button class="login-back" onclick="location.href='jasmines-qr-menu.html'">← Back to customer menu</button>
+    </div>
+  `;
+}
+
+function renderAdmin(){
+  const tabDefs = [
+    {id:'dashboard', label:'📊 Dashboard'},
+    {id:'orders', label:'🧾 Orders'},
+    {id:'menu', label:'📋 Menu'},
+    {id:'qr', label:'▦ QR Codes'},
+    {id:'settings', label:'⚙️ Settings'},
+  ];
+  const subtabs = `
+    <div class="ksubtabs">
+      ${tabDefs.map(t=>`<div class="ksubtab ${state.tab===t.id?'active':''}" onclick="setTab('${t.id}')">${t.label}</div>`).join('')}
+    </div>
+  `;
+  let inner = '';
+  if(state.tab==='dashboard') inner = renderDashboard();
+  else if(state.tab==='orders') inner = renderOrders();
+  else if(state.tab==='menu') inner = renderMenuAdmin();
+  else if(state.tab==='qr') inner = renderQR();
+  else if(state.tab==='settings') inner = renderSettings();
+
+  return `
+    <div class="topbar">
+      <div class="brand">
+        <div class="mark">🫖</div>
+        <div class="word"><b>${state.settings.cafeName.toUpperCase()}</b><span>${state.settings.shortName.toUpperCase()}</span></div>
+      </div>
+      <div class="brand-tag">Admin</div>
+    </div>
+    <div class="kview">
+      <div class="admin-topline" style="padding:0;">
+        <h2>Admin Panel</h2>
+        <button class="logout-link" onclick="logout()">Log out</button>
+      </div>
+      <div class="khint">Manage orders, menu, tables and settings</div>
+      ${subtabs}
+      ${inner}
+    </div>
+  `;
+}
+
+function renderDashboard(){
+  const totalOrders = orders.length;
+  const revenue = orders.reduce((s,o)=>s+o.total,0);
+  const active = orders.filter(o=>o.status!=='served').length;
+  const avgOrder = totalOrders>0 ? Math.round(revenue/totalOrders) : 0;
+  const tally = {};
+  orders.forEach(o=>o.items.forEach(it=>{ tally[it.name] = (tally[it.name]||0) + it.qty; }));
+  const top = Object.entries(tally).sort((a,b)=>b[1]-a[1])[0];
+  const topMenuItem = top ? MENU.find(m=>m.name===top[0]) : null;
+  const statusCols = [
+    {status:'new', label:'New'},
+    {status:'preparing', label:'Preparing'},
+    {status:'ready', label:'Ready'},
+    {status:'served', label:'Served'},
+  ];
+
+  return `
+    ${db
+      ? `<div class="demo-flag" style="border-color:rgba(91,169,104,.4); color:#8fd39c; background:rgba(91,169,104,.08);">🟢 Live — connected to your order database. Orders placed on the customer menu show up here in real time.</div>`
+      : `<div class="demo-flag">⚪ Not connected yet — this admin panel can't see live orders until you paste your Firebase config into both HTML files. See the setup steps below <code>FIREBASE_CONFIG</code> in the code, or ask for the walkthrough again.</div>`
+    }
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Orders Today</div>
+        <div class="stat-value">${totalOrders}</div>
+        <div class="stat-sub">${active} active now</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Revenue</div>
+        <div class="stat-value">₹${revenue}</div>
+        <div class="stat-sub">avg ₹${avgOrder} / order</div>
+      </div>
+    </div>
+    <div class="status-grid">
+      ${statusCols.map(c=>`
+        <div class="status-chip">
+          <div class="sc-count">${orders.filter(o=>o.status===c.status).length}</div>
+          <div class="sc-label">${c.label}</div>
+        </div>
+      `).join('')}
+    </div>
+    ${top ? `
+      <div class="top-item-card">
+        <div class="ti-icon">${topMenuItem ? topMenuItem.icon : '🔥'}</div>
+        <div>
+          <div class="ti-label">Best Seller</div>
+          <div class="ti-name">${top[0]}</div>
+          <div class="ti-count">${top[1]} sold today</div>
+        </div>
+      </div>
+    ` : ``}
+
+    <div class="danger-zone">
+      <div class="dz-title">⚠️ Reset &amp; Data Controls</div>
+      <div class="dz-hint">Restore defaults if something gets messed up, or clear real orders once they're handled. Each action asks for confirmation first.</div>
+      <div class="dz-row">
+        <button class="dz-btn" onclick="clearAllOrders()">Clear All Orders</button>
+        <button class="dz-btn" onclick="resetMenuToDefaults()">Reset Menu to Defaults</button>
+      </div>
+      <div class="dz-row">
+        <button class="dz-btn danger" onclick="factoryResetAll()">Factory Reset Everything</button>
+      </div>
+      ${state.resetMsg ? `<div class="reset-msg">✓ ${state.resetMsg}</div>` : ''}
+    </div>
+  `;
+}
+
+function renderOrders(){
+  const cols = [
+    {status:'new', label:'New'},
+    {status:'preparing', label:'Preparing'},
+    {status:'ready', label:'Ready to Serve'},
+  ];
+  const active = orders.filter(o=>o.status!=='served');
+  const body = active.length===0
+    ? `<div class="kempty">No active orders.</div>`
+    : cols.map(col=>{
+        const ordersInCol = active.filter(o=>o.status===col.status);
+        if(ordersInCol.length===0) return '';
+        return `
+          <div class="kcol-title">${col.label} (${ordersInCol.length})</div>
+          ${ordersInCol.map(o=>`
+            <div class="korder">
+              <div class="ko-top">
+                <div class="ko-id">${o.id}</div>
+                <div class="ko-table">Table ${o.table} · ${timeAgo(o.time)}</div>
+              </div>
+              <div class="ko-items">${o.items.map(it=>`${it.qty}× ${it.name}`).join(', ')}</div>
+              ${o.notes ? `<div class="ko-note">"${o.notes}"</div>` : ''}
+              <div class="ko-actions">
+                ${o.status==='new' ? `<button class="ko-btn-prep" onclick="advanceStatus('${o.id}')">Start Preparing</button>` : ''}
+                ${o.status==='preparing' ? `<button class="ko-btn-ready" onclick="advanceStatus('${o.id}')">Mark Ready</button>` : ''}
+                ${o.status==='ready' ? `<button class="ko-btn-served" onclick="advanceStatus('${o.id}')">Mark Served</button>` : ''}
+              </div>
+            </div>
+          `).join('')}
+        `;
+      }).join('');
+  return body;
+}
+
+function renderMenuAdmin(){
+  const rows = CATS.map(c=>{
+    const catItems = MENU.filter(m=>m.cat===c.id);
+    return `
+      <div class="madmin-cat">${c.label}</div>
+      ${catItems.map(m=>`
+        <div class="madmin-row ${m.available?'':'unavailable'}">
+          <div class="mi-icon">${m.image ? `<img src="${m.image}" alt="" style="width:20px;height:20px;border-radius:4px;object-fit:cover;display:block;" onerror="this.outerHTML='${m.icon}';">` : m.icon}</div>
+          <div class="mi-main">
+            <div class="mi-name-line">
+              <div class="diet-dot ${m.veg?'veg':'nonveg'}"></div>
+              <div class="mi-name">${m.name}</div>
+            </div>
+          </div>
+          ₹<input class="mi-price-edit" type="number" value="${m.price}" onchange="updateItemPrice('${m.id}', this.value)">
+          <label class="toggle-sw">
+            <input type="checkbox" ${m.available?'checked':''} onchange="toggleAvailable('${m.id}')">
+            <span class="sw-track"></span>
+          </label>
+          <button class="mi-del" onclick="deleteMenuItem('${m.id}')">🗑</button>
+        </div>
+      `).join('')}
+    `;
+  }).join('');
+
+  return `
+    ${rows}
+  `;
+}
+
+function renderQR(){
+  const base = (state.settings.menuBaseUrl || '').trim().replace(/\/+$/, '');
+  if(!base){
+    return `
+      <div class="khint" style="margin-top:4px;">
+        You haven't set your live menu link yet. Go to <b>Settings</b> and paste the URL where you've hosted
+        <code>jasmines-qr-menu.html</code>, then come back here — your QR codes will generate automatically.
+      </div>
+    `;
+  }
+  const cards = Array.from({length: state.qrTableCount}, (_,i)=>i+1).map(n=>`
+    <div class="qr-card">
+      <div class="qr-mini-wrap"><canvas id="qr-admin-${n}"></canvas></div>
+      <div class="qr-table-label">Table</div>
+      <div class="qr-table-num">${n}</div>
+      <div class="qr-url">${base}?table=${n}</div>
+    </div>
+  `).join('');
+  return `
+    <div class="qr-toolbar">
+      <div class="qr-count-ctrl">
+        Tables:
+        <select onchange="setQrCount(this.value)">
+          ${[4,6,8,10,12,16].map(n=>`<option value="${n}" ${n===state.qrTableCount?'selected':''}>${n}</option>`).join('')}
+        </select>
+      </div>
+      <button class="qr-print-btn" onclick="window.print()">🖨 Print All</button>
+    </div>
+    <div class="khint" style="margin-top:-4px;">Each code is unique per table — print, laminate, and place one on each table tent.</div>
+    <div id="printArea" class="qr-grid">${cards}</div>
+  `;
+}
+
+function renderSettings(){
+  return `
+    <div class="settings-group">
+      <div class="settings-label">Cafe Name</div>
+      <input class="settings-field" value="${state.settings.cafeName}" oninput="state.settings.cafeName=this.value">
+      <div class="settings-label">Short Name (menu header)</div>
+      <input class="settings-field" value="${state.settings.shortName}" oninput="state.settings.shortName=this.value">
+      <div class="settings-label">Tagline</div>
+      <input class="settings-field" value="${state.settings.tagline}" oninput="state.settings.tagline=this.value">
+      <div class="settings-label">Live Menu URL</div>
+      <input class="settings-field" placeholder="e.g. https://jasmines-cafe.netlify.app/jasmines-qr-menu.html" value="${state.settings.menuBaseUrl}" oninput="state.settings.menuBaseUrl=this.value">
+      <div style="font-size:11px;color:var(--cream-dim);margin-top:-6px;margin-bottom:6px;">Paste the link to where you've hosted the customer menu page. QR Codes will use this.</div>
+      <div class="settings-label">Admin Username</div>
+      <input class="settings-field" value="${state.credentials.user}" oninput="state.credentials.user=this.value">
+      <div class="settings-label">Admin Password</div>
+      <input class="settings-field" type="text" value="${state.credentials.pass}" oninput="state.credentials.pass=this.value">
+      <button class="ai-submit" onclick="saveSettings()">Save Settings</button>
+      ${state.settingsSaved ? `<div style="margin-top:10px;"><span class="settings-saved">✓ Saved</span></div>` : ''}
+    </div>
+  `;
+}
+
+function render(){
+  const root = document.getElementById('app');
+  root.innerHTML = state.authed ? renderAdmin() : renderLogin();
+  if(state.authed && state.tab==='qr'){
+    const base = (state.settings.menuBaseUrl || '').trim().replace(/\/+$/, '');
+    if(base){
+      for(let n=1; n<=state.qrTableCount; n++){
+        try{
+          new QRious({
+            element: document.getElementById('qr-admin-'+n),
+            value: base + '?table=' + n,
+            size: 110, background:'#ffffff', foreground:'#1B1410', level:'H'
+          });
+        }catch(e){}
+      }
+    }
+  }
+  if(!state.authed){
+    const u = document.getElementById('loginUser');
+    if(u) u.focus();
+  }
+}
+
+function attemptLogin(){
+  if(state.username.trim()===state.credentials.user && state.password===state.credentials.pass){
+    state.authed = true;
+    state.loginError = '';
+    state.password = '';
+    state.tab = 'dashboard';
+  } else {
+    state.loginError = 'Incorrect username or password';
+  }
+  render();
+}
+function logout(){ state.authed=false; state.username=''; state.password=''; render(); }
+function setTab(t){ state.tab=t; render(); }
+function setQrCount(n){ state.qrTableCount=parseInt(n,10); render(); }
+
+function advanceStatus(id){
+  const order = orders.find(o=>o.id===id);
+  if(!order) return;
+  const flow = ['new','preparing','ready','served'];
+  const idx = flow.indexOf(order.status);
+  if(idx >= flow.length-1) return;
+  const nextStatus = flow[idx+1];
+  if(db && order._key){
+    db.ref('orders/'+order._key).update({status: nextStatus});
+    // Firebase listener will re-render with the updated data.
+  } else {
+    order.status = nextStatus;
+    render();
+  }
+}
+
+function toggleAvailable(id){
+  const item = MENU.find(m=>m.id===id);
+  if(item) item.available = !item.available;
+  render();
+}
+function updateItemPrice(id, val){
+  const item = MENU.find(m=>m.id===id);
+  const n = parseInt(val,10);
+  if(item && !isNaN(n) && n>=0) item.price = n;
+  render();
+}
+function deleteMenuItem(id){
+  const item = MENU.find(m=>m.id===id);
+  if(item && !confirm(`Remove "${item.name}" from the menu?`)) return;
+  MENU = MENU.filter(m=>m.id!==id);
+  render();
+}
+function saveSettings(){
+  state.settingsSaved = true;
+  render();
+  setTimeout(()=>{ state.settingsSaved=false; render(); }, 1800);
+}
+
+// ===== Reset & Data Controls =====
+function flashResetMsg(msg){
+  state.resetMsg = msg;
+  render();
+  setTimeout(()=>{ state.resetMsg=''; render(); }, 2400);
+}
+function clearAllOrders(){
+  if(!confirm('Clear all orders? This wipes the current order list. This cannot be undone.')) return;
+  if(db){
+    db.ref('orders').remove();
+    // Firebase listener will re-render once the data is cleared.
+  } else {
+    orders = [];
+    render();
+  }
+  flashResetMsg('All orders cleared');
+}
+function resetMenuToDefaults(){
+  if(!confirm("Reset the menu? Any items you've added, edited, or removed will revert to the original menu.")) return;
+  MENU = JSON.parse(JSON.stringify(FACTORY_MENU));
+  flashResetMsg('Menu reset to defaults');
+}
+function factoryResetAll(){
+  if(!confirm('Factory reset EVERYTHING — orders, menu, and settings (including your username/password and live menu URL)? This cannot be undone.')) return;
+  if(db){
+    db.ref('orders').remove();
+  } else {
+    orders = [];
+  }
+  MENU = JSON.parse(JSON.stringify(FACTORY_MENU));
+  state.settings = {...FACTORY_SETTINGS};
+  state.credentials = {...FACTORY_CREDENTIALS};
+  state.qrTableCount = FACTORY_QR_COUNT;
+  flashResetMsg('Everything reset to factory defaults');
+}
+
+render();
+</script>
+</body>
+</html>
